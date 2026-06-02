@@ -4,6 +4,7 @@
 
 | 버전 | 날짜 | 타입 | 주요 내용 |
 |------|------|------|----------|
+| [v5.8.8](v5.8.8.md) | 2026-06-02 | Bug Fix | 검색 필터 버그 수정 — SAP/SDP description 누락, IES hostname 검색 불가, Unicode 정규화 불일치 |
 | [v5.8.7](v5.8.7.md) | 2026-04-22 | Infrastructure | 포털 전용 접속 전환 — Authentik 인증 제거, VITE_API_URL 동적화 |
 | [v5.8.5](v5.8.5.md) | 2026-04-10 | UX | "파일에서도 발견됨" 섹션 — 미로드 파일만 표시 (로드된 파일 중복 제거) |
 | [v5.8.4](v5.8.4.md) | 2026-04-10 | Bug Fix | extractSection 빈 service 블록 건너뜀 — 7750SR-a8 파일 서비스 미파싱 버그 수정 |

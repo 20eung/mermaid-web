@@ -6,6 +6,17 @@
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
 
+## [5.8.8] - 2026-06-02
+
+### 🐛 버그 수정 (Bug Fix)
+
+- **검색 필터 버그 수정 (search-filter-fix)**: 단일 검색어에서 누락되던 필드 및 IES 서비스 검색 불가 문제 4건 수정
+  - Epipe/VPLS SAP `description`, `portDescription` 단일 검색어에서 누락 수정
+  - Epipe/VPLS Spoke/Mesh SDP `description` 단일 검색어에서 누락 수정
+  - IES 서비스를 hostname·serviceId·description으로 검색 불가 버그 수정 (서비스 레벨 매칭 분리)
+  - 단일 검색어 Catch-all에서 Unicode 하이픈 정규화(`normalizeSearchString`) 미적용 수정
+  - VPRN 인터페이스 `portDescription` 명시적 검색 추가 (단일/복수 경로 모두)
+
 ## [5.8.1] - 2026-04-10
 
 ### ⚡ 성능 (Performance)

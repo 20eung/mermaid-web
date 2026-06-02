@@ -660,49 +660,58 @@ export function ServiceListV3({
 
           // 서비스 타입별 상세 검색
           if (service.serviceType === 'epipe') {
-            // SAP IDs
+            // SAP: ID + description + portDescription (FR-01, FR-02)
             if ('saps' in service && service.saps) {
-              if (service.saps.some(sap => sap.sapId.toLowerCase().includes(query))) return true;
+              if (service.saps.some(sap =>
+                sap.sapId.toLowerCase().includes(query) ||
+                normalizeSearchString(sap.description).includes(query) ||
+                (sap.portDescription && normalizeSearchString(sap.portDescription).includes(query))
+              )) return true;
             }
-            // SDP IDs
+            // Spoke SDP: ID + vcId + description (FR-03)
             if ('spokeSdps' in service && service.spokeSdps) {
               if (service.spokeSdps.some(sdp =>
                 sdp.sdpId.toString().includes(query) ||
-                sdp.vcId.toString().includes(query)
+                sdp.vcId.toString().includes(query) ||
+                normalizeSearchString(sdp.description).includes(query)
               )) return true;
             }
           } else if (service.serviceType === 'vpls') {
-            // SAP IDs
+            // SAP: ID + description + portDescription (FR-01, FR-02)
             if ('saps' in service && service.saps) {
-              if (service.saps.some(sap => sap.sapId.toLowerCase().includes(query))) return true;
+              if (service.saps.some(sap =>
+                sap.sapId.toLowerCase().includes(query) ||
+                normalizeSearchString(sap.description).includes(query) ||
+                (sap.portDescription && normalizeSearchString(sap.portDescription).includes(query))
+              )) return true;
             }
-            // Spoke SDP IDs
+            // Spoke SDP: ID + vcId + description (FR-03)
             if ('spokeSdps' in service && service.spokeSdps) {
               if (service.spokeSdps.some(sdp =>
                 sdp.sdpId.toString().includes(query) ||
-                sdp.vcId.toString().includes(query)
+                sdp.vcId.toString().includes(query) ||
+                normalizeSearchString(sdp.description).includes(query)
               )) return true;
             }
-            // Mesh SDP IDs
+            // Mesh SDP: ID + vcId + description (FR-03)
             if ('meshSdps' in service && service.meshSdps) {
-              if (service.meshSdps.some(sdp => sdp.sdpId.toString().includes(query))) return true;
+              if (service.meshSdps.some(sdp =>
+                sdp.sdpId.toString().includes(query) ||
+                sdp.vcId.toString().includes(query) ||
+                normalizeSearchString(sdp.description).includes(query)
+              )) return true;
             }
           } else if (service.serviceType === 'vprn') {
             // Interfaces
             if ('interfaces' in service && service.interfaces) {
               for (const iface of service.interfaces) {
-                // Interface Name
                 if (iface.interfaceName && iface.interfaceName.toLowerCase().includes(query)) return true;
-                // Interface Description
                 if (iface.description && iface.description.toLowerCase().includes(query)) return true;
-                // Port ID
                 if (iface.portId && iface.portId.toLowerCase().includes(query)) return true;
-                // IP Address
                 if (iface.ipAddress && iface.ipAddress.toLowerCase().includes(query)) return true;
-                // VPLS Name
                 if (iface.vplsName && iface.vplsName.toLowerCase().includes(query)) return true;
-                // Spoke SDP
                 if (iface.spokeSdpId && iface.spokeSdpId.toLowerCase().includes(query)) return true;
+                if (iface.portDescription && normalizeSearchString(iface.portDescription).includes(query)) return true; // FR-08
               }
             }
             // BGP Information
@@ -718,9 +727,7 @@ export function ServiceListV3({
             // OSPF Information
             if ('ospf' in service && service.ospf && service.ospf.areas) {
               for (const area of service.ospf.areas) {
-                // Area ID
                 if (area.areaId.toLowerCase().includes(query)) return true;
-                // OSPF Interfaces
                 if (area.interfaces && area.interfaces.some(intf =>
                   intf.interfaceName.toLowerCase().includes(query)
                 )) return true;
@@ -734,16 +741,22 @@ export function ServiceListV3({
               if (service.routeDistinguisher.toLowerCase().includes(query)) return true;
             }
           } else if (service.serviceType === 'ies') {
-            // ⚠️ IES는 여기서 true/false 판단하지 않음!
-            // 인터페이스 레벨 필터링은 별도 로직으로 처리 (v4.5.0)
-            return true; // 일단 통과시키고 나중에 필터링
+            // IES 서비스 레벨 매칭: hostname/serviceId/description 매칭 시 통과 (FR-04~06)
+            // 매칭되면 전체 인터페이스 표시, 미매칭이면 아래 Catch-all 또는 인터페이스 필터로 처리
+            const iesHostname = (service as any)._hostname;
+            const iesServiceLevelMatch = (
+              service.serviceId.toString().includes(query) ||
+              normalizeSearchString(service.description).includes(query) ||
+              (service.serviceName && normalizeSearchString(service.serviceName).includes(query)) ||
+              (iesHostname && normalizeSearchString(iesHostname).includes(query))
+            );
+            if (iesServiceLevelMatch) return true;
           }
 
           // Catch-all: 서비스 객체 전체를 JSON으로 변환하여 검색 (v4.5.0)
-          // 파싱된 모든 필드를 누락 없이 검색합니다
-          // (IES는 위에서 이미 return true 처리되어 여기 도달하지 않음)
+          // 파싱된 모든 필드를 누락 없이 검색합니다 (Unicode 정규화 적용 - B4 수정)
           try {
-            const serviceJson = JSON.stringify(service).toLowerCase();
+            const serviceJson = normalizeSearchString(JSON.stringify(service));
             if (serviceJson.includes(query)) return true;
           } catch (e) {
             // JSON.stringify 실패 시 무시
@@ -794,7 +807,8 @@ export function ServiceListV3({
                   iface.portId || '',
                   iface.ipAddress || '',
                   iface.vplsName || '',
-                  iface.spokeSdpId || ''
+                  iface.spokeSdpId || '',
+                  iface.portDescription || '', // FR-08
                 );
               });
             }
@@ -855,10 +869,20 @@ export function ServiceListV3({
       return true;
     }).map(service => {
       // ⭐ IES 인터페이스 레벨 필터링 적용 (v4.5.0, v5.5.2: 정규화, v5.6.0: Network Type)
+      // v5.9.0: 서비스 레벨 매칭(hostname/serviceId/description) 시 인터페이스 필터 skip (FR-04~06)
       if (service.serviceType === 'ies' && searchQuery) {
+        const normalizedQuery = normalizeSearchString(searchQuery);
+        const iesHostname = (service as any)._hostname;
+        const serviceLevelMatch = (
+          service.serviceId.toString().includes(normalizedQuery) ||
+          normalizeSearchString(service.description).includes(normalizedQuery) ||
+          (service.serviceName && normalizeSearchString(service.serviceName).includes(normalizedQuery)) ||
+          (iesHostname && normalizeSearchString(iesHostname).includes(normalizedQuery))
+        );
+        if (serviceLevelMatch) return service; // 전체 인터페이스 표시
         return filterIESInterfaces(
           service as IESService & { _hostname: string },
-          normalizeSearchString(searchQuery)
+          normalizedQuery
         );
       }
       return service;

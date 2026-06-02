@@ -160,6 +160,7 @@ Minor/Major 변경 시: hook 비활성화 → `npm run version:minor/major` → 
 
 | 버전 | 날짜 | 주요 내용 |
 |---|---|---|
+| v5.8.8 | 2026-06-02 | 검색 필터 버그 수정 — SAP/SDP description 누락, IES hostname 검색 불가, Unicode 정규화 불일치 수정 |
 | v5.8.5 | 2026-04-10 | "파일에서도 발견됨" 섹션 미로드 파일만 표시 (로드된 파일 중복 제거) |
 | v5.8.4 | 2026-04-10 | extractSection 빈 service 블록 건너뜀 — 7750SR-a8 파일 서비스 미파싱 버그 수정 |
 | v5.8.1 | 2026-04-10 | React 성능 최적화 v2 (groupedDiagrams useMemo, handleCopyCode/handleZoom useCallback, Dashboard 상수화) |
@@ -188,6 +189,6 @@ Minor/Major 변경 시: hook 비활성화 → `npm run version:minor/major` → 
 
 ---
 
-**Last Updated**: 2026-04-10
-**Current Version**: v5.8.5
+**Last Updated**: 2026-06-02
+**Current Version**: v5.8.8
 **Branch**: main
